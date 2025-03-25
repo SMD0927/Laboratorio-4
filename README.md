@@ -2,7 +2,7 @@
 
 # Análisis de señales elecromiografocas (EMG)
 
-En este laboratorio exploramos señales fisiológicas de EMG utilizando técnicas de adqusicion de datos,filtrado de la señal,aventanamiento y el analisis espectral,teniendo en cuenta las tecnicas vistas en clase.
+En este laboratorio exploramos señales fisiológicas de EMG utilizando técnicas de adqusicion de datos,filtrado de la señal,aventanamiento y el analisis espectral,teniendo en cuenta las tecnicas vistas en clase.Sabiendo que la EMG es una técnica que mide la actividad eléctrica de los músculos atravez de potenciales de acción.Normalmente se usa para evaluar y ver cómo funcionan los músculos y detectar anomalías en su activación o en la transmisión de señales entre nervios y músculos (Comunicación neuromuscular).
 
 ## Requisitos
 - **Python 3.9**
@@ -72,7 +72,6 @@ with open("datos_adquiridos.txt", "w") as f:
 - for t, v in zip(time_axis, data): Itera simultáneamente sobre el eje de tiempo (time_axis) y los datos de voltaje (data).
 - f.write(f"{t:.6f}\t{v:.6f}\n"): Cada línea guarda un par tiempo-voltaje formateado a 6 decimales, separados por tabulación, en una línea individual.
 ---
-
 
 
 
