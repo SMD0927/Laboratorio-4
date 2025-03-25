@@ -1,36 +1,81 @@
 # Laboratorio-4
-Analisis de electromiografia (EMG)
-# Análisis Estadístico de la Señal
 
-En este laboratorio exploramos señales fisiológicas de ECG utilizando técnicas de estadística descriptiva y modelos de ruido. El objetivo es entender tanto las características propias de la señal como el impacto del ruido, analizando aspectos como la relación señal-ruido (SNR).
+# Análisis de señales elecromiografocas (EMG)
+
+En este laboratorio exploramos señales fisiológicas de EMG utilizando técnicas de adqusicion de datos,filtrado de la señal,aventanamiento y el analisis espectral,teniendo en cuenta las tecnicas vistas en clase.
 
 ## Requisitos
 - **Python 3.9**
 - Bibliotecas necesarias:
-  - `wfdb`
+  - `nidaqmx`
   - `numpy`
   - `matplotlib`
-  - `seaborn`
 
 Instalar dependencias:
 ```bash
-pip install wfdb numpy matplotlib seaborn
+pip install nidaqmx numpy matplotlib
 ```
 
 ## Estructura del Código
 
-### 1. Lectura de Datos
+### 1. Adquisición de datos
+1.1 Librerias y definición de parámetros
 ```python
-import wfdb
+import nidaqmx
+from nidaqmx.constants import AcquisitionType
 import numpy as np
-
-datos = wfdb.rdrecord('rec_2')
-t = 2000
-señal = datos.p_signal[:t, 0]
 ```
-Se utiliza `wfdb.rdrecord` para cargar una señal fisiológica (ECG) desde un archivo estándar en formato WFDB que fueron descargados en PhysioNet. En este caso, se seleccionan los primeros 2000 puntos de la señal. Este paso inicial permite trabajar con un subconjunto significativo de datos para realizar análisis detallados.[1][2]
-
+- nidaqmx: Esta librería permite interactuar con dispositivos de adquisición de datos (DAQ) de National Instruments.
+- AcquisitionType: Define el modo de adquisición (en este caso, FINITE, que indica un número finito de muestras).
+- numpy (np): Sierve para operaciones numéricas y generación de arreglos, como el eje de tiempo.
+```python
+fs = 1000                  
+dur = 2 * 60                
+n_samples = fs * dur      
+```
+- `fs`  Se establece la frecuencia de muestreo en 1000 Hz.
+- `dur` es la duración de adquisición en segundos .
+- `n_samples` Se calcula el número total de muestras a adquirir (1000 × 120 = 120,000 muestras).
 ---
+1.2 Configuración y adquisición de datos
+```python
+with nidaqmx.Task() as task:
+    task.ai_channels.add_ai_voltage_chan("Dev3/ai0")
+    task.timing.cfg_samp_clk_timing(fs, sample_mode=AcquisitionType.FINITE, samps_per_chan=n_samples)
+    task.start()
+    task.wait_until_done(timeout=dur + 10)
+    data = task.read(number_of_samples_per_channel=n_samples)
+time_axis = np.linspace(0, duration_seconds, num_samples, endpoint=False)
+```
+En esta parte nos vasamos en el codigo presentado en [nidaqmx-python](https://github.com/ni/nidaqmx-python) el cual se modifico para que ampliara el tiempo de adquisisción de datos,donde:
+- with nidaqmx.Task() as task: crea y gestiona automáticamente la tarea (task), asegurando que se cierre correctamente al finalizar.
+- task.ai_channels.add_ai_voltage_chan("Dev3/ai0"): Se configura el canal de entrada analógica para medir voltaje (debe ajustarse según el dispositivo).
+- task.timing.cfg_samp_clk_timing(...):Configura la temporización de la adquisición:
+  - fs: Frecuencia de muestreo.
+  - sample_mode=AcquisitionType.FINITE: Se indica que la adquisición es de número finito de muestras.
+  - samps_per_chan=n_samples: Número de muestras a adquirir por canal.
+
+- task.start(): Inicia la adquisición de datos.
+- task.wait_until_done(timeout=dur + 10): Espera a que la adquisición se complete, con un tiempo de espera adicional de 10 segundos para mayor seguridad.
+- data = task.read(...): Lee los datos adquiridos, esperando obtener el número total de muestras especificado.
+- np.linspace(0, dur, n_samples, endpoint=False): Genera un arreglo de tiempo para asignar un instante a cada muestra adquirida.
+---
+1.3 Almacenamiento de Datos 
+```python
+with open("datos_adquiridos.txt", "w") as f:
+    f.write("Tiempo (s)\tVoltaje (V)\n")
+    for t, v in zip(time_axis, data):
+        f.write(f"{t:.6f}\t{v:.6f}\n")
+```
+- with open("datos_adquiridos.txt", "w") as f: Abre (o crea) el archivo datos_adquiridos.txt en modo escritura.
+- f.write("Tiempo (s)\tVoltaje (V)\n"): Escribe la línea de encabezado en el archivo, separando las columnas con una tabulación (\t).
+- for t, v in zip(time_axis, data): Itera simultáneamente sobre el eje de tiempo (time_axis) y los datos de voltaje (data).
+- f.write(f"{t:.6f}\t{v:.6f}\n"): Cada línea guarda un par tiempo-voltaje formateado a 6 decimales, separados por tabulación, en una línea individual.
+---
+
+
+
+
 
 ### 2. Histograma de la Señal
 ```python
