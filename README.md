@@ -1,6 +1,6 @@
 # Laboratorio-4
 
-# Análisis de señales elecromiografocas (EMG)
+# Análisis de señales elecromiograficas (EMG)
 
 En este laboratorio exploramos señales fisiológicas de EMG utilizando técnicas de adqusicion de datos,filtrado de la señal,aventanamiento y el analisis espectral,teniendo en cuenta las tecnicas vistas en clase.Sabiendo que la EMG es una técnica que mide la actividad eléctrica de los músculos atravez de potenciales de acción.Normalmente se usa para evaluar y ver cómo funcionan los músculos y detectar anomalías en su activación o en la transmisión de señales entre nervios y músculos (Comunicación neuromuscular).
 
