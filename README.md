@@ -48,12 +48,12 @@ with nidaqmx.Task() as task:
 time_axis = np.linspace(0, duration_seconds, num_samples, endpoint=False)
 ```
 En esta parte nos vasamos en el codigo presentado en [nidaqmx-python](https://github.com/ni/nidaqmx-python) el cual se modifico para que ampliara el tiempo de adquisisción de datos,donde:
-- task.timing.cfg_samp_clk_timing(...):Configura la temporización de la adquisición:
+- `task.timing.cfg_samp_clk_timing(...)`:Configura la temporización de la adquisición:
   - fs: Frecuencia de muestreo.
   - sample_mode=AcquisitionType.FINITE: Se indica que la adquisición es de número finito de muestras.
   - samps_per_chan=n_samples: Número de muestras a adquirir por canal.
-- task.start(): Inicia la adquisición de datos.
-- data = task.read(...): Lee los datos adquiridos, esperando obtener el número total de muestras especificado.
+- `task.start()`: Inicia la adquisición de datos.
+- `data = task.read(...)`: Lee los datos adquiridos, esperando obtener el número total de muestras especificado.
 ---
 1.3 Almacenamiento de Datos 
 ```python
@@ -62,10 +62,8 @@ with open("datos_adquiridos.txt", "w") as f:
     for t, v in zip(time_axis, data):
         f.write(f"{t:.6f}\t{v:.6f}\n")
 ```
-- with open("datos_adquiridos.txt", "w") as f: Abre (o crea) el archivo datos_adquiridos.txt en modo escritura.
-- f.write("Tiempo (s)\tVoltaje (V)\n"): Escribe la línea de encabezado en el archivo, separando las columnas con una tabulación (\t).
-- for t, v in zip(time_axis, data): Itera simultáneamente sobre el eje de tiempo (time_axis) y los datos de voltaje (data).
-- f.write(f"{t:.6f}\t{v:.6f}\n"): Cada línea guarda un par tiempo-voltaje formateado a 6 decimales, separados por tabulación, en una línea individual.
+- `with open("datos_adquiridos.txt", "w") as f:` Abre (o crea) el archivo datos_adquiridos.txt en modo escritura.
+- `f.write("Tiempo (s)\tVoltaje (V)\n")`: Escribe la línea de encabezado en el archivo, separando las columnas con una tabulación (\t).
 ---
 
 ### 2. Adquisición de la señal EMG.
