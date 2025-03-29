@@ -73,12 +73,11 @@ with open("datos_adquiridos.txt", "w") as f:
 - f.write(f"{t:.6f}\t{v:.6f}\n"): Cada línea guarda un par tiempo-voltaje formateado a 6 decimales, separados por tabulación, en una línea individual.
 ---
 
-
-
-
 ### 2. Señal EMG en la fatiga muscular
 
-
+<p align="center">
+    <img src="https://i.postimg.cc/50qyPvY9/histograma.png" alt="histograma" width="450">
+</p>
 El primer diagrama muestra la señal electromiográfica captada para este laboratorio,es decir, sin implementarle ningun tipo de filtro. Observandose que presenta variaciones tanto de frencuencia como de amplitud indicando cambion en la activación muscular conforme avanza la prueba.
 Debido a que esta es la señal original, se evidencia la existencia de ruido e interferencias, dificultando la interpretación precisa del comportamiento electromiográfico del musculo. La reducción gradual de la señal esta vinculada con la fatiga muscular, ya que se espera que conforme el esfuerzo se extienda, la capacidad contráctil se reduzca y esto se refleje en la actividad eléctrica registrada conforme al tiempo.
 
@@ -102,28 +101,16 @@ plt.legend()
 plt.show()
 plt.grid()
 ```
+Ahora se tiene la refresentación gráfica que en un primer caso muestra un segmento de los primeros 10 segundos de la señal inicial sin filtrado.  Este acercamiento se lleva a cabo para examinar el comportamiento inicial de la actividad muscular, anticipando un incremento en la intensidad de la señal a causa de la activación inicial de un mayor número de unidades motoras. A primera impresión, se puede apreciar que la señal conserva una amplitud considerable y una variabilidad estable, lo que indica una fuerte contracción muscular en los primeros segundos del esfuerzo.  No obstante, el hecho de que haya ruido en esta señal puede aún complicar el estudio exacto de la actividad electromiográfica.
+
+Finalmente, la última gráfica muestra los primeros 10 segundos de la señal EMG con la aplicación del filtro pasa-banda mediante el mismo codigo de filtro para la señal original. Al igual que en la segunda gráfica, el filtrado mejora la calidad de la señal al eliminar interferencias y ruidos no deseados, permitiendo una mejor visualización de la activación muscular inicial. Se observa que, la señal filtrada exhibe una estructura más clara, facilitando la identificación de la frecuencia y la amplitud de la actividad electromiográfica en la fase inicial del esfuerzo. La comparación de esta gráfica con la anterior permite notar la importancia del filtrado para obtener una interpretación más precisa de la fatiga muscular.
 <p align="center">
 
 </p>
 
-
-
-```python
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-sns.histplot(señal, kde=True, bins=30, color='red')
-plt.hist(señal, bins=30, edgecolor='blue')
-plt.title('Histograma de Datos')
-plt.xlabel('Datos')
-plt.ylabel('Frecuencia')
-plt.show()
-```
 <p align="center">
     <img src="https://i.postimg.cc/50qyPvY9/histograma.png" alt="histograma" width="450">
 </p>
-
-El histograma muestra una distribución asimétrica con mayor concentración de valores cerca de 0 y una cola extendida a la derecha, indicando un sesgo positivo. Esto sugiere la posible presencia de ruido o eventos atípicos en la señal, aunque la mayoría de los valores se mantienen dentro de un rango fisiológico típico.[3]
 
 ---
 
