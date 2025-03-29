@@ -82,6 +82,10 @@ with open("datos_adquiridos.txt", "w") as f:
 Este diagrama muestra la señal electromiográfica captada para este laboratorio,es decir, sin implementarle ningun tipo de filtro. Observandose que presenta variaciones tanto de frencuencia como de amplitud indicando cambion en la activación muscular conforme avanza la prueba.
 Debido a que esta es la señal original, se evidencia la existencia de ruido e interferencias, dificultando la interpretación precisa del comportamiento electromiográfico del musculo. La reducción gradual de la señal esta vinculada con la fatiga muscular, ya que se espera que conforme el esfuerzo se extienda, la capacidad contráctil se reduzca y esto se refleje en la actividad eléctrica registrada conforme al tiempo.
 
+<p align="center">
+  ![Señal EMG adquiquirida](![Imagen 2025-03-27 a las 19 54 49_52d624f3](https://github.com/user-attachments/assets/b5a3fd80-19cd-49c3-b563-0ee5e0e4b8e9)
+)
+</p>
 ```python
 import seaborn as sns
 import matplotlib.pyplot as plt
