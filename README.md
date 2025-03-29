@@ -48,17 +48,12 @@ with nidaqmx.Task() as task:
 time_axis = np.linspace(0, duration_seconds, num_samples, endpoint=False)
 ```
 En esta parte nos vasamos en el codigo presentado en [nidaqmx-python](https://github.com/ni/nidaqmx-python) el cual se modifico para que ampliara el tiempo de adquisisción de datos,donde:
-- with nidaqmx.Task() as task: crea y gestiona automáticamente la tarea (task), asegurando que se cierre correctamente al finalizar.
-- task.ai_channels.add_ai_voltage_chan("Dev3/ai0"): Se configura el canal de entrada analógica para medir voltaje (debe ajustarse según el dispositivo).
 - task.timing.cfg_samp_clk_timing(...):Configura la temporización de la adquisición:
   - fs: Frecuencia de muestreo.
   - sample_mode=AcquisitionType.FINITE: Se indica que la adquisición es de número finito de muestras.
   - samps_per_chan=n_samples: Número de muestras a adquirir por canal.
-
 - task.start(): Inicia la adquisición de datos.
-- task.wait_until_done(timeout=dur + 10): Espera a que la adquisición se complete, con un tiempo de espera adicional de 10 segundos para mayor seguridad.
 - data = task.read(...): Lee los datos adquiridos, esperando obtener el número total de muestras especificado.
-- np.linspace(0, dur, n_samples, endpoint=False): Genera un arreglo de tiempo para asignar un instante a cada muestra adquirida.
 ---
 1.3 Almacenamiento de Datos 
 ```python
