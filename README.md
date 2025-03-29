@@ -1,190 +1,290 @@
-# Laboratorio-4
-
-# Análisis de señales elecromiograficas (EMG)
-
-En este laboratorio exploramos señales fisiológicas de EMG utilizando técnicas de adqusicion de datos,filtrado de la señal,aventanamiento y el analisis espectral,teniendo en cuenta las tecnicas vistas en clase.Sabiendo que la EMG es una técnica que mide la actividad eléctrica de los músculos atravez de potenciales de acción.Normalmente se usa para evaluar y ver cómo funcionan los músculos y detectar anomalías en su activación o en la transmisión de señales entre nervios y músculos (Comunicación neuromuscular).[1]
+# Señales Electromiográficas EMG  
+ LABORATORIO - 4 PROCESAMIENTO DIGITAL DE SEÑALES
 
 ## Requisitos
-- **Python 3.9**
+- Python 3.12
 - Bibliotecas necesarias:
-  - `nidaqmx`
-  - `numpy`
-  - `matplotlib`
-
-Instalar dependencias:
-```bash
-pip install nidaqmx numpy matplotlib
+  - nidaqmx
+  - numpy
+  - matplotlib
+  - scipy
+ 
+ ```python
+# Importamos las librerías necesarias
+import nidaqmx
+from nidaqmx.constants import AcquisitionType
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import butter, lfilter
+from scipy.stats import ttest_rel
 ```
 
-## Estructura del Código
+ _ _ _
+## Introducción
+En este laboratorio, se realizó la adquisición y análisis de señales electromiográficas (EMG) con el objetivo de estudiar la fatiga muscular a través del procesamiento digital de señales. Para ello, se utilizaron electrodos de superficie y un sistema de adquisición de datos (DAQ), permitiendo registrar la actividad eléctrica de los músculos durante una contracción sostenida. Posteriormente, se aplicaron técnicas de filtrado y análisis espectral mediante la Transformada de Fourier (FFT) para identificar cambios en la frecuencia de la señal, lo que permitió evaluar la fatiga en el musculo estudiado.
 
-### 1. Adquisición de datos
-1.1 Librerias y definición de parámetros
+_ _ _
+
+## 1) Preparación del Sujeto
+Se analizó el músculo flexor común de los dedos, encargado de la flexión de los dedos de la mano y fundamental en la prensión y manipulación de objetos. Desde el punto de vista de la fisiología muscular, su frecuencia de contracción se encuentra en un rango de 10 a 500 Hz, lo que indica la actividad eléctrica generada durante su activación. Para analizar esta actividad, se utilizó un sensor de electromiografía (EMG), específicamente el Muscle Sensor v3, junto con un sistema de adquisición de datos (DAQ). Este sistema permitió registrar y almacenar la señal electromiográfica, para posteriormente realizar su correspondiente procesamiento digital. 
+
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/d0a7cfdc-6328-43ff-8884-5fc5ccb0735b" alt="imagen" width="200" height="200">
+    <img src="https://github.com/user-attachments/assets/841d468d-fa1d-41aa-a9ed-9167ff048171" alt="imagen" width="350" height="200">
+</p>
+
+Se empleó una configuración diferencial, que consiste en colocar dos electrodos activos sobre el mismo músculo y un tercer electrodo en una zona de referencia. En este método, se contrasta la señal registrada por los dos electrodos activos para suprimir interferencias y ruidos comunes, como el ambiental o el generado por músculos adyacentes. El electrodo de referencia, ubicado en una región eléctricamente estable (por ejemplo, en un punto óseo), El electrodo de referencia se utiliza para establecer un potencial de base o cero contra el cual se comparan las señales de los electrodos activos. 
+
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/fbf058b1-05ab-48ff-bd4d-951703bb5857" alt="imagen" width="200">
+</p>
+
+Para determinar la frecuencia de muestreo, se siguió el teorema de Nyquist. Dado que la frecuencia máxima en este caso es de 500 Hz, la frecuencia de muestreo debe ser mayor o igual a 100 Hz para garantizar una correcta reconstrucción de la señal. Para esta caso se utilizo 1000 Hz de frecuencia.
+
+$$
+f_s \geq 2f_{\text{max}}
+$$
+
+$$
+100 \geq 2(500)
+$$
+
+
+_ _ _
+
+## 2) Adquisición de la Señal EMG:
+
+La adquisición de la señal se realizó en Python, tomando como referencia un repositorio de GitHub [2].
+
 ```python
+# Importamos las librerías necesarias
 import nidaqmx
 from nidaqmx.constants import AcquisitionType
 import numpy as np
 ```
-- nidaqmx: Esta librería permite interactuar con dispositivos de adquisición de datos (DAQ) de National Instruments.[2]
-- AcquisitionType: Define el modo de adquisición (en este caso, FINITE, que indica un número finito de muestras).
-- numpy (np): Sierve para operaciones numéricas y generación de arreglos, como el eje de tiempo.
+El código comienza importando las librerías necesarias para la adquisición de datos y el procesamiento numérico. Se importa nidaqmx, que permite la comunicación con el sistema de adquisición de datos (DAQ) de National Instruments
+
 ```python
-fs = 1000                  
-dur = 2 * 60                
-n_samples = fs * dur      
+sample_rate = 1000         
+duration_minutes = 2      
+duration_seconds = duration_minutes * 60  
+num_samples = int(sample_rate * duration_seconds)
 ```
-- `fs`  Se establece la frecuencia de muestreo en 1000 Hz.
-- `dur` es la duración de adquisición en segundos .
-- `n_samples` Se calcula el número total de muestras a adquirir (1000 × 120 = 120,000 muestras).
----
-1.2 Configuración y adquisición de datos
+En esta sección se definen algunos parametros. Se establece la frecuencia de muestreo en 1000 Hz (sample_rate = 1000), lo que significa que se capturarán 1000 muestras por segundo. La duración de la adquisición se define en minutos (duration_minutes = 2), y se convierte a segundos (duration_seconds = duration_minutes * 60). Luego, se determina el número total de muestras a capturar (num_samples = int(sample_rate * duration_seconds)).
+
 ```python
 with nidaqmx.Task() as task:
+    
     task.ai_channels.add_ai_voltage_chan("Dev3/ai0")
-    task.timing.cfg_samp_clk_timing(fs, sample_mode=AcquisitionType.FINITE, samps_per_chan=n_samples)
+    
+    task.timing.cfg_samp_clk_timing(
+        sample_rate,
+        sample_mode=AcquisitionType.FINITE,
+        samps_per_chan=num_samples
+    )
+    
     task.start()
-    task.wait_until_done(timeout=dur + 10)
-    data = task.read(number_of_samples_per_channel=n_samples)
+
+    task.wait_until_done(timeout=duration_seconds + 10)
+
+    data = task.read(number_of_samples_per_channel=num_samples)
+```
+Para llevar a cabo la adquisición de datos, se utiliza un bloque with nidaqmx.Task() as task:, que crea una tarea en el DAQ. Dentro de esta tarea, se agrega un canal de entrada analógica con task.ai_channels.add_ai_voltage_chan("Dev3/ai0"), configurado para medir voltaje en el canal Dev3/ai0.
+
+Una vez configurada la tarea, la adquisición de datos comienza con task.start(). Al finalizar, los datos se leen con task.read(number_of_samples_per_channel=num_samples), lo que devuelve una lista de valores de voltaje adquiridos.
+
+```python
 time_axis = np.linspace(0, duration_seconds, num_samples, endpoint=False)
-```
-En esta parte nos vasamos en el codigo presentado en [nidaqmx-python](https://github.com/ni/nidaqmx-python) el cual se modifico para que ampliara el tiempo de adquisisción de datos,donde:
-- `task.timing.cfg_samp_clk_timing(...)`:Configura la temporización de la adquisición:
-  - fs: Frecuencia de muestreo.
-  - sample_mode=AcquisitionType.FINITE: Se indica que la adquisición es de número finito de muestras.
-  - samps_per_chan=n_samples: Número de muestras a adquirir por canal.
-- `task.start()`: Inicia la adquisición de datos.
-- `data = task.read(...)`: Lee los datos adquiridos, esperando obtener el número total de muestras especificado.
----
-1.3 Almacenamiento de Datos 
-```python
-with open("datos_adquiridos.txt", "w") as f:
-    f.write("Tiempo (s)\tVoltaje (V)\n")
+with open("datos_adquiridos.txt", "w") as archivo_txt:
+    archivo_txt.write("Tiempo (s)\tVoltaje (V)\n")
     for t, v in zip(time_axis, data):
-        f.write(f"{t:.6f}\t{v:.6f}\n")
+        archivo_txt.write(f"{t:.6f}\t{v:.6f}\n")
 ```
-- `with open("datos_adquiridos.txt", "w") as f:` Abre (o crea) el archivo datos_adquiridos.txt en modo escritura.
-- `f.write("Tiempo (s)\tVoltaje (V)\n")`: Escribe la línea de encabezado en el archivo, separando las columnas con una tabulación (\t).
----
+Para representar los datos correctamente, se genera un eje de tiempo. La función np.linspace(0, duration_seconds, num_samples, endpoint=False) crea un arreglo de valores que representa el tiempo de cada muestra, comenzando en 0 segundos y extendiéndose hasta la duración total de la adquisición. Finalmente, los datos adquiridos se guardan en un archivo de texto llamado datos_adquiridos.txt.
 
-### 2. Adquisición de la señal EMG.
-
-<p align="center">
-  <img src="https://github.com/SMD0927/Laboratorio-4/blob/main/Se%C3%B1aloriginal.jpg" alt="Señal EMG adquirida" width="850">
-</p>
-
-<p align="center">
-  <img src="https://github.com/SMD0927/Laboratorio-4/blob/main/Se%C3%B1alOriginalFiltrada.jpg" alt="Señal EMG adquirida filtrada" width="850"> 
-</p>
-
-El primer diagrama muestra la señal electromiográfica captada para este laboratorio,es decir, sin implementarle ningun tipo de filtro. Observandose que presenta variaciones tanto de frencuencia como de amplitud indicando cambion en la activación muscular conforme avanza la prueba.
-Debido a que esta es la señal original, se evidencia la existencia de ruido e interferencias, dificultando la interpretación precisa del comportamiento electromiográfico del musculo. La reducción gradual de la señal esta vinculada con la fatiga muscular, ya que se espera que conforme el esfuerzo se extienda, la capacidad contráctil se reduzca y esto se refleje en la actividad eléctrica registrada conforme al tiempo.
-
-Por otro lado, en la segunda grafica muestra la misma señal electromiográfica que en el primero, pero utilizando un filtro de pasa-banda. Este filtro, fundamentado en la función bandpass_filter() del código suministrado, facilita la eliminación de frecuencias no deseadas, dejando solo las pertinentes para el análisis del EMG. Este filtrado facilita la identificación de patrones de activación muscular sin la interferencia de ruidos de baja frecuencia (como el movimiento del electrodo) o de alta frecuencia (como el sonido de la red eléctrica). En esta versión de la señal se puede apreciar con más exactitud el progreso de la fatiga muscular, dado que las oscilaciones electromiográficas están directamente vinculadas con la actividad de las unidades motoras.
 
 ```python
-def bandpass_filter(data, lowcut, highcut, fs, order=4):
-    nyquist = 0.5 * fs
-    b, a = butter(order, [lowcut/nyquist, highcut/nyquist], btype='band')
-    return lfilter(b, a, data)
+señal = np.loadtxt("datos_adquiridos.txt", skiprows=1)        
+tiempo = señal[:, 0]  
+voltaje = señal[:, 1] 
 
-filtered_voltage = bandpass_filter(voltage, lowcut, highcut, fs)
-
-plt.figure(figsize=(20, 5))
-plt.plot(t, filtered_voltage, label="Señal Filtrada", color='orange')
+plt.figure(figsize=(10, 5))
+plt.plot(tiempo, voltaje,color="b", label="Señal")
 plt.xlabel("Tiempo (s)")
 plt.ylabel("Voltaje (V)")
-plt.title("Señal Filtrada")
-plt.xlim(0,4)
-plt.legend()
-plt.show()
+plt.title("Gráfica de la Señal Adquirida")
 plt.grid()
+plt.show()
 ```
+Posteriormente la señal obtenida y guardada en "datos_adquiridos.txt", se importa en otro Programa de python para realizar su correspondiente procesamiento digital.
+Se muestra la señal Obtenida.
 <p align="center">
-<img src="https://github.com/SMD0927/Laboratorio-4/blob/main/Se%C3%B1alOriginal10seg.jpg"alt="Sección de la Señal adquirida filtrada" width="850">
+    <img src="https://github.com/user-attachments/assets/d488e8e3-0482-4c9f-bbf5-d13a0767a985" alt="imagen" width="500">
 </p>
 
-<p align="center">
-    <img src="https://github.com/SMD0927/Laboratorio-4/blob/main/Se%C3%B1alOriginalFiltrada10seg.jpg" alt="Sección de la Señal adquirida" width="850">
-</p>
 
-Ahora se tiene la refresentación gráfica que en un primer caso muestra un segmento de los primeros 10 segundos de la señal inicial sin filtrado.  Este acercamiento se lleva a cabo para examinar el comportamiento inicial de la actividad muscular, anticipando un incremento en la intensidad de la señal a causa de la activación inicial de un mayor número de unidades motoras. A primera impresión, se puede apreciar que la señal conserva una amplitud considerable y una variabilidad estable, lo que indica una fuerte contracción muscular en los primeros segundos del esfuerzo.  No obstante, el hecho de que haya ruido en esta señal puede aún complicar el estudio exacto de la actividad electromiográfica.
+_ _ _ 
+## 3) Filtrado de la Señal:
+### Filtro Pasa Banda
+El siguiente código implementa un filtro pasa-banda digital utilizando un filtro Butterworth. Primero, establece un filtro pasa-bajos con una frecuencia de corte de 400 Hz y un filtro pasa-altos con una frecuencia de corte de 10 Hz, ambos de orden 10. Luego, la señal se filtra primero con el filtro pasa-bajos y posteriormente con el pasa-altos, eliminando frecuencias fuera del rango deseado. Finalmente, la señal filtrada se devuelve como salida.
+```python
+def filtro(s,fs):
+    orden = 10
+    corte1 = 400
+    corte2 = 20
+    nyquist = 0.5 * fs
+    corte_normalizada1 = corte1 / nyquist
+    corte_normalizada2 = corte2 / nyquist
+    b, a = butter(orden, corte_normalizada1, btype='low', analog=False)
+    b2, a2 = butter(orden, corte_normalizada2, btype='high', analog=False)
+    señal_f1 = lfilter(b, a, s)
+    return lfilter(b2, a2, señal_f1)    
+sf = filtro(voltaje,fs)
+```
+Después de aplicar el filtro pasa-altos, la señal, que inicialmente era positiva, adquirió valores negativos. Esto puede deberse a la eliminación del componente de corriente directa (DC), lo que hizo que la señal comenzara a oscilar alrededor de cero. Esto ocurre porque un filtro pasa-altos elimina las frecuencias bajas, incluyendo cualquier desplazamiento positivo presente en la señal original.
 
-Finalmente, la última gráfica muestra los primeros 10 segundos de la señal EMG con la aplicación del filtro pasa-banda mediante el mismo codigo de filtro para la señal original. Al igual que en la segunda gráfica, el filtrado mejora la calidad de la señal al eliminar interferencias y ruidos no deseados, permitiendo una mejor visualización de la activación muscular inicial. Se observa que, la señal filtrada exhibe una estructura más clara, facilitando la identificación de la frecuencia y la amplitud de la actividad electromiográfica en la fase inicial del esfuerzo. La comparación de esta gráfica con la anterior permite notar la importancia del filtrado para obtener una interpretación más precisa de la fatiga muscular.
 
----
 
-### 3. Segmentación y ventaneo de la señal EMG
-Para medir la fatiga muscular, se requiere comparar la actividad muscular al comienzo y al término del experimento.  Por esta razón, la señal filtrada se segmenta en ventanas concretas:
 
-1. Primeras contracciones (sin fatiga): Se extraen las primeras 4.8 s de la señal.
 
-2. Últimas contracciones (con fatiga): Se extraen ventanas en los últimos segundos.
-
-Para optimizar la evaluación en el ámbito de la frecuencia, se utiliza una ventana de Hann, la cual disminuye los impactos de discontinuidad en los bordes de la señal mediante el cálculo de su transformada Fourier.
-
+_ _ _ 
+## 4) Aventanamiento:
+Se aplica la técnica de ventaneo a la señal filtrada sf utilizando la ventana de Hanning, que suaviza los bordes de cada segmento para minimizar efectos de discontinuidad en el análisis espectral.
+### Primeras contracciones
 ```python
 hanning = np.hanning(1000) 
 ventana1 = sf[:1000] * hanning
 ventana2 = sf[1000:2000] * hanning
 ventana3 = sf[2000:2700] * hanning[:700]
+ventana4 = sf[2700:3400] * hanning[:700]
+ventana5 = sf[3400:4100] * hanning[:700]
+ventana6 = sf[4100:4800] * hanning[:700]
+señal_ventaneada = np.concatenate([ventana1, ventana2, ventana3, ventana4, ventana5, ventana6])
 ```
-Es importante realizar este ventaneo ya que minimiza las fugas espectrales en la FFT, incrementando la exactitud del análisis en el campo de la frecuencia. Asimismo, permite comparar las ventanas de la señal, lo que posibilita valorar el efecto de la fatiga muscular.
+Primero se genera una ventana de Hanning de 1000 puntos, que se utiliza para multiplicar los primeros dos segmentos de la señal, cada uno de 1000 muestras. Luego, se extraen cuatro segmentos adicionales de 700 muestras cada uno, a los cuales se les aplica la parte correspondiente de la ventana de Hanning. Finalmente, todos los segmentos ventaneados se concatenan para formar una señal continua con transiciones más suaves entre las secciones.
+
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/d6ab7258-2d25-46ff-bd9c-deb251aa3c95" alt="imagen" width="400">
+    
+</p>
 
 
----
-### 4. Dominio de la Frecuencia
-En el análisis de la fatiga muscular, uno de los indicadores esenciales es la frecuencia mediana (FM) de la señal EMG. Para determinar su valor, se efectúa una Transformada Rápida de Fourier (FFT) en cada ventana de la señal.
+### Ultimas Contracciones
 ```python
-fre = np.fft.fftfreq(N, 1/fs)
-frecuencias = fre[:N//2]
-espectro = np.fft.fft(ventana) / N
-magnitud = 2 * np.abs(espectro[:N//2])
+ventana7 = sf[82400:83000] * hanning[:600]
+ventana8 = sf[83000:83660] * hanning[:660]
+ventana9 = sf[83660:84560] * hanning[:900]
+ventana10 = sf[84560:85100] * hanning[:540]
+ventana11 = sf[85100:85570] * hanning[:470]
+ventana12 = sf[85570:86400] * hanning[:830]
+señal_ventaneadaf = np.concatenate([ventana7, ventana8, ventana9, ventana10, ventana11, ventana12])
 ```
-Este espectro nos proporciona la frecuencia mediana (FM), que se define como la frecuencia en la que se concentra el 50% de la energía total de la señal:
+Este código aplica ventanas de Hanning a seis segmentos específicos de la señal filtrada sf, pero en rangos de índices más altos. Cada segmento se extrae con una cantidad diferente de muestras y se multiplica por una porción de la ventana de Hanning correspondiente. Posteriormente, todos los segmentos ventaneados se concatenan para formar señal_ventaneadaf.
+
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/2c2eaf4c-b0df-4d4a-9827-8033c4fea131" alt="imagen" width="400">
+</p>
+
+Se aplicó el venteado únicamente a algunas contracciones, específicamente a las primeras y últimas antes de la fatiga. Para ello, se utilizó una ventana de Hanning con el fin de dividir cada contracción en intervalos de tiempo. Esta ventana fue seleccionada porque ayuda a suavizar los extremos de la señal, evitando cambios bruscos que puedan distorsionar el análisis. Su forma es similar a una curva de coseno, lo que permite que los valores en los bordes de la señal se reduzcan gradualmente a cero, minimizando la discontinuidad en los límites de cada intervalo y mejorando la precisión del análisis espectral.
+
+Para determinar el tamaño de cada ventana, se analizó la gráfica de la señal y se realizó una estimación de la duración de cada contracción, dado que la duración variaba entre ellas. Esto permitió ajustar el tamaño de la ventana de manera adecuada para cada caso, asegurando que el análisis se adaptara a estas diferencias
+
+_ _ _
+### trasformada de fourier
+Luego, se aplica la transformada de Fourier a cada ventana para obtener su espectro de frecuencias.
+
 ```python
-psd = magnitud ** 2
-potencia_total = np.sum(psd)
-potencia_acumulada = np.cumsum(psd)
-fm_index = np.where(potencia_acumulada >= potencia_total / 2)[0][0]
-fm = frecuencias[fm_index]
+for i in range(1, 13):
+    ventana = eval(f"ventana{i}")  
+    N = len(ventana)
+    
+    fre = np.fft.fftfreq(N, 1/fs)
+    frecuencias = fre[:N//2]
+    espectro = np.fft.fft(ventana) / N
+    magnitud = 2 * np.abs(espectro[:N//2])
 ```
-Este análisis es fundamental, ya que una disminución de la FM a lo largo del tiempo es indicativa de fatiga muscular. Es necesario indicar que se grafican los espectros de cada ventana para visualizar la evolución de la señal EMG en el dominio de la frecuencia.
+<p align="center">
+        <img src="https://github.com/user-attachments/assets/8e67297d-7d2f-43da-9c13-3b42da1f35e7" alt="imagen" width="400">
+    <img src="https://github.com/user-attachments/assets/1e67d02b-2812-4f31-a341-c48baf78dcaa" alt="imagen" width="400">
+</p>
 
-#### 5. Estadística de la Fatiga Muscular
+Se presenta el espectro de frecuencias correspondiente a la primera contracción y a la última contracción en el inicio de la fatiga.
+Al comparar ambas gráficas, se observa una disminución en las frecuencias presentes en el espectro de la señal a medida que se acerca la fatiga. Este cambio indica una reducción en la activación de componentes de alta frecuencia, lo que puede estar asociado a una disminución en la velocidad de conducción de las fibras musculares. Estos resultados sugieren que la fatiga muscular influye en la dinámica espectral de la señal, reflejando una disminución en la eficiencia neuromuscular conforme avanza el esfuerzo.
 
-Para determinar si la fatiga muscular afecta significativamente la frecuencia mediana, se emplea una prueba t pareada (ttest_rel) que compara las FM de las primeras y últimas contracciones.
+
+
+
+
+
+_ _ _
+## 5) Análisis Espectral:
+
+### Prueba de Hipotesis
+Además de determinar el espectro de frecuencias, se calcula la frecuencia mediana en cada ventana con el fin de analizar la fatiga mediante una prueba de hipótesis.
+
 ```python
+antes = []
+despues = []        
+
+for i in range(1, 13):
+    ventana = eval(f"ventana{i}")  
+    N = len(ventana)
+    
+    fre = np.fft.fftfreq(N, 1/fs)
+    frecuencias = fre[:N//2]
+    espectro = np.fft.fft(ventana) / N
+    magnitud = 2 * np.abs(espectro[:N//2])
+    
+    psd = magnitud ** 2
+    potencia_total = np.sum(psd)
+    potencia_acumulada = np.cumsum(psd)
+    
+    fm_index = np.where(potencia_acumulada >= potencia_total / 2)[0][0]
+    fm = frecuencias[fm_index]
+
+    if 1<=i<=6:
+        antes.append(fm)
+    else:
+        despues.append(fm)
+```
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/d24c997b-d753-4d09-bb3e-58d79be0d7e8" alt="imagen" width="400">
+</p>
+
+La mediana obtenida en cada ventana se guarda en una lista correspondiente. Primero, se registran las primeras 6 contracciones iniciales y luego las 6 ultimas, cuando el músculo entra en fatiga.
+Finalmente se realiza la prueba de hipotesis haciendo uso de scipy.
+
+ ```python
 stat, p = ttest_rel(antes, despues)
 
+print(f'P-valor: {p}')
+
 if p < 0.05:
-    print("Rechazamos la hipótesis H₀, la fatiga afecta significativamente la mediana de frecuencia.")
+    print("Rechazamos la hipotesis H₀, La fatiga afecta significativamente la mediana de frecuencia.")
 else:
-    print("No se puede rechazar H₀, no hay evidencia suficiente de un cambio significativo.")
+    print("No se puede rechazar H₀, No hay evidencia suficiente de un cambio significativo.")
+
 ```
-La interpretacion de estos resultados se expresa de la siguiente forma dado el caso:
 
-Si \( p < 0.05 \): Se rechaza \( H0 \), lo que indica que la fatiga muscular ha causado una disminución significativa en la frecuencia mediana.
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/0017a9a3-f2dd-44a5-b1b4-3982d2abc4fa" alt="imagen" width="500">
+</p>
 
-Si \( p &ge; 0.05 \): No hay suficiente evidencia para rechazar \( H0 \), lo que sugiere que la fatiga no ha afectado significativamente la FM.
-
-**Análisis:**
-Las gráficas muestran que al aumentar la amplitud del ruido, el SNR disminuye, lo que significa que la señal se vuelve menos distinguible. Con una amplitud baja de ruido, la señal sigue siendo reconocible y el SNR es mayor. Sin embargo, al amplificar el ruido, el SNR cae drásticamente, generando una señal más contaminada y difícil de interpretar. Esto refleja la importancia de minimizar el ruido en aplicaciones donde la precisión es fundamental, como en el procesamiento de señales fisiológicas.
+En el test de hipótesis realizado, se descartó la hipótesis nula (𝐻₀) al observar que la mediana de las frecuencias cerca de la fatiga disminuyó, indicando una diferencia significativa. Esto sugiere que, a medida que el músculo se fatiga, hay una reducción en las frecuencias características de la señal, lo que puede estar relacionado con una menor velocidad de conducción en las fibras musculares y una modificación en el reclutamiento de unidades motoras. La disminución de la velocidad de conducción se debe a cambios en la excitabilidad de la membrana, lo que ralentiza la propagación del potencial de acción y afecta la activación eficiente del músculo.
 
 
----
 
-## Instrucciones
-1. Captar la señal electromiografica usando el dispositivo de adquisición de datos(DAQ).
-2. Codificar y Ejecutar el código en un entorno Python.
----
 
-## Bibliografías
 
-[1] https://doi.org/10.4321/S1137-66272009000600003
 
-[2] https://nidaqmx-python.readthedocs.io/en/stable/
 
-----
-## Autores 
-Sañuel Peña -Ana Abril- Santiago Mora
+_ _ _
 
+## Bibliografias
+[1] Pololu, "Muscle Sensor v3 User’s Manual," [Online]. Available: https://www.pololu.com/file/0J745/Muscle_Sensor_v3_users_manual.pdf. [Accessed: 24-Mar-2025].
+
+[2] National Instruments, "NI-DAQmx Python API," GitHub repository, [Online]. Available: https://github.com/ni/nidaqmx-python. [Accessed: 24-Mar-2025].
+
+[3] National Instruments, "Understanding FFTs and Windowing," NI, [Online]. Available: https://www.ni.com/es/shop/data-acquisition/measurement-fundamentals/analog-fundamentals/understanding-ffts-and-windowing.html. [Accessed: 25-Mar-2025].
+
+_ _ _
