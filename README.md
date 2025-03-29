@@ -121,22 +121,6 @@ Las gráficas muestran que al aumentar la amplitud del ruido, el SNR disminuye, 
 
 ---
 
-### 7. Visualización de Ruido
-Se grafican las señales contaminadas con ruido:
-```python
-plt.figure()
-plt.plot(señal, label='Señal original')
-plt.plot(señal_ruidosa, label='Ruido gaussiano')
-plt.legend()
-plt.show()
-```
-
-**Análisis Visual:**
-El código grafica la señal original junto con su versión afectada por ruido gaussiano, permitiendo visualizar cómo este ruido altera la forma de la señal.
-Las gráficas muestran cómo diferentes tipos de ruido afectan la forma de la señal, con el ruido de artefacto generando mayores distorsiones.
-
----
-
 ## Instrucciones
 1. Captar la señal electromiografica usando el dispositivo de adquisición de datos(DAQ).
 2. Codificar y Ejecutar el código en un entorno Python.
