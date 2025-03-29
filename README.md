@@ -79,13 +79,35 @@ with open("datos_adquiridos.txt", "w") as f:
 ### 2. Señal EMG en la fatiga muscular
 
 
-Este diagrama muestra la señal electromiográfica captada para este laboratorio,es decir, sin implementarle ningun tipo de filtro. Observandose que presenta variaciones tanto de frencuencia como de amplitud indicando cambion en la activación muscular conforme avanza la prueba.
+El primer diagrama muestra la señal electromiográfica captada para este laboratorio,es decir, sin implementarle ningun tipo de filtro. Observandose que presenta variaciones tanto de frencuencia como de amplitud indicando cambion en la activación muscular conforme avanza la prueba.
 Debido a que esta es la señal original, se evidencia la existencia de ruido e interferencias, dificultando la interpretación precisa del comportamiento electromiográfico del musculo. La reducción gradual de la señal esta vinculada con la fatiga muscular, ya que se espera que conforme el esfuerzo se extienda, la capacidad contráctil se reduzca y esto se refleje en la actividad eléctrica registrada conforme al tiempo.
 
+Por otro lado, en la segunda grafica muestra la misma señal electromiográfica que en el primero, pero utilizando un filtro de pasa-banda. Este filtro, fundamentado en la función bandpass_filter() del código suministrado, facilita la eliminación de frecuencias no deseadas, dejando solo las pertinentes para el análisis del EMG. Este filtrado facilita la identificación de patrones de activación muscular sin la interferencia de ruidos de baja frecuencia (como el movimiento del electrodo) o de alta frecuencia (como el sonido de la red eléctrica). En esta versión de la señal se puede apreciar con más exactitud el progreso de la fatiga muscular, dado que las oscilaciones electromiográficas están directamente vinculadas con la actividad de las unidades motoras.
+
+```python
+def bandpass_filter(data, lowcut, highcut, fs, order=4):
+    nyquist = 0.5 * fs
+    b, a = butter(order, [lowcut/nyquist, highcut/nyquist], btype='band')
+    return lfilter(b, a, data)
+
+filtered_voltage = bandpass_filter(voltage, lowcut, highcut, fs)
+
+plt.figure(figsize=(20, 5))
+plt.plot(t, filtered_voltage, label="Señal Filtrada", color='orange')
+plt.xlabel("Tiempo (s)")
+plt.ylabel("Voltaje (V)")
+plt.title("Señal Filtrada")
+plt.xlim(0,4)
+plt.legend()
+plt.show()
+plt.grid()
+```
 <p align="center">
-![Gráfica de fatiga muscular](https://raw.githubusercontent.com/SMD0927/Laboratorio-4/main/![Imagen 2025-03-27 a las 19 54 49_52d624f3](https://github.com/user-attachments/assets/4db23b9d-1780-4ce5-af31-ec5725ff89e6)
-)
+
 </p>
+
+
+
 ```python
 import seaborn as sns
 import matplotlib.pyplot as plt
