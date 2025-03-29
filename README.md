@@ -113,7 +113,59 @@ Finalmente, la última gráfica muestra los primeros 10 segundos de la señal EM
 
 ---
 
-### 3. 
+### 3. Segmentación y ventaneo de la señal EMG
+Para medir la fatiga muscular, se requiere comparar la actividad muscular al comienzo y al término del experimento.  Por esta razón, la señal filtrada se segmenta en ventanas concretas:
+
+1. Primeras contracciones (sin fatiga): Se extraen las primeras 4.8 s de la señal.
+
+2. Últimas contracciones (con fatiga): Se extraen ventanas en los últimos segundos.
+
+Para optimizar la evaluación en el ámbito de la frecuencia, se utiliza una ventana de Hann, la cual disminuye los impactos de discontinuidad en los bordes de la señal mediante el cálculo de su transformada Fourier.
+
+```python
+hanning = np.hanning(1000) 
+ventana1 = sf[:1000] * hanning
+ventana2 = sf[1000:2000] * hanning
+ventana3 = sf[2000:2700] * hanning[:700]
+```
+Es importante realizar este ventaneo ya que minimiza las fugas espectrales en la FFT, incrementando la exactitud del análisis en el campo de la frecuencia. Asimismo, permite comparar las ventanas de la señal, lo que posibilita valorar el efecto de la fatiga muscular.
+
+
+---
+### 4. Dominio de la Frecuencia
+En el análisis de la fatiga muscular, uno de los indicadores esenciales es la frecuencia mediana (FM) de la señal EMG. Para determinar su valor, se efectúa una Transformada Rápida de Fourier (FFT) en cada ventana de la señal.
+```python
+fre = np.fft.fftfreq(N, 1/fs)
+frecuencias = fre[:N//2]
+espectro = np.fft.fft(ventana) / N
+magnitud = 2 * np.abs(espectro[:N//2])
+```
+Este espectro nos proporciona la frecuencia mediana (FM), que se define como la frecuencia en la que se concentra el 50% de la energía total de la señal:
+```python
+psd = magnitud ** 2
+potencia_total = np.sum(psd)
+potencia_acumulada = np.cumsum(psd)
+fm_index = np.where(potencia_acumulada >= potencia_total / 2)[0][0]
+fm = frecuencias[fm_index]
+```
+Este análisis es fundamental, ya que una disminución de la FM a lo largo del tiempo es indicativa de fatiga muscular. Es necesario indicar que se grafican los espectros de cada ventana para visualizar la evolución de la señal EMG en el dominio de la frecuencia.
+
+#### 5. Estadística de la Fatiga Muscular
+
+Para determinar si la fatiga muscular afecta significativamente la frecuencia mediana, se emplea una prueba t pareada (ttest_rel) que compara las FM de las primeras y últimas contracciones.
+```python
+stat, p = ttest_rel(antes, despues)
+
+if p < 0.05:
+    print("Rechazamos la hipótesis H₀, la fatiga afecta significativamente la mediana de frecuencia.")
+else:
+    print("No se puede rechazar H₀, no hay evidencia suficiente de un cambio significativo.")
+```
+La interpretacion de estos resultados se expresa de la siguiente forma dado el caso:
+
+Si \( p < 0.05 \): Se rechaza \( H0 \), lo que indica que la fatiga muscular ha causado una disminución significativa en la frecuencia mediana.
+
+Si \( p &ge; 0.05 \): No hay suficiente evidencia para rechazar \( H0 \), lo que sugiere que la fatiga no ha afectado significativamente la FM.
 
 **Análisis:**
 Las gráficas muestran que al aumentar la amplitud del ruido, el SNR disminuye, lo que significa que la señal se vuelve menos distinguible. Con una amplitud baja de ruido, la señal sigue siendo reconocible y el SNR es mayor. Sin embargo, al amplificar el ruido, el SNR cae drásticamente, generando una señal más contaminada y difícil de interpretar. Esto refleja la importancia de minimizar el ruido en aplicaciones donde la precisión es fundamental, como en el procesamiento de señales fisiológicas.
