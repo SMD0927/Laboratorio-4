@@ -190,7 +190,7 @@ Se aplicó el venteado únicamente a algunas contracciones, específicamente a l
 Para determinar el tamaño de cada ventana, se analizó la gráfica de la señal y se realizó una estimación de la duración de cada contracción, dado que la duración variaba entre ellas. Esto permitió ajustar el tamaño de la ventana de manera adecuada para cada caso, asegurando que el análisis se adaptara a estas diferencias
 
 _ _ _
-### trasformada de fourier
+### Trasformada de fourier
 Luego, se aplica la transformada de Fourier a cada ventana para obtener su espectro de frecuencias.
 
 ```python
@@ -271,7 +271,6 @@ else:
 </p>
 
 En el test de hipótesis realizado, se descartó la hipótesis nula (𝐻₀) al observar que la mediana de las frecuencias cerca de la fatiga disminuyó, indicando una diferencia significativa. Esto sugiere que, a medida que el músculo se fatiga, hay una reducción en las frecuencias características de la señal, lo que puede estar relacionado con una menor velocidad de conducción en las fibras musculares y una modificación en el reclutamiento de unidades motoras. La disminución de la velocidad de conducción se debe a cambios en la excitabilidad de la membrana, lo que ralentiza la propagación del potencial de acción y afecta la activación eficiente del músculo.
-
 
 
 
