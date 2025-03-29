@@ -352,7 +352,6 @@ Las gráficas muestran cómo diferentes tipos de ruido afectan la forma de la se
 ---
 
 ## Bibliografías
-[1] https://physionet.org/about/database/ 
 
 [2] https://wfdb.readthedocs.io/en/latest/
 
