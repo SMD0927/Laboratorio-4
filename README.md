@@ -347,7 +347,7 @@ Las gráficas muestran cómo diferentes tipos de ruido afectan la forma de la se
 ---
 
 ## Instrucciones
-1. Descargar la señal desde bases de datos como PhysioNet.
+1. Captar la señal electromiografica usando el dispositivo de adquisición de datos(DAQ).
 2. Codificar y Ejecutar el código en un entorno Python.
 ---
 
